@@ -1,0 +1,379 @@
+反射
+
+Java 程序在运行期间可以获取到一个对象的全部信息，调用对象内部信息，包括成员变量，成员方法，构造器
+
+一个类在堆上只有一个 Class 对象，包含类的结构信息
+
+优点：动态创建使用对象，是 Java 框架底层核心
+缺点：本质是解释执行，对执行速度有影响
+
+类加载：
+1、静态加载（依赖性强，编译时没有就报错）
+	new 时，会被加载
+	调用静态成员，类被加载
+	子类被加载，超类也被加载
+
+2、动态加载
+	反射，运行时用到哪个，加载哪个
+
+
+
+类加载各个阶段
+1、加载：将类的 class 文件读入内存，创建java.lang.Class对象，由类加载器完成
+将字节码从不同数据源（jar包，class 文件，网络文件）转换到二进制字节流，加载到内存中，生成java.lang.Class对象
+
+2、连接：验证，准备，解析，将二进制数据合并到 JRE 中
+
+验证：
+确保字节流包含的信息符合虚拟机要求
+文件格式验证：检查魔数，版本号
+元数据验证：父类，接口，字段，方法的引用是否合法
+字节码验证：静态分析类的字节码，放在类型转换和越界
+符号引用验证，确保类，方法，字段存在且可访问
+
+可以运行时候使用 Xverify:none 关闭文件格式，元数据等验证
+java -Xverify:none Myclass
+
+
+准备：
+JVM 对静态变量分配内存并进行初始化，int为0,bool为false等等，方法区上
+
+public int a = 10;实例属性，准备阶段不分配内存
+public static int b = 20; 静态变量，初始分配为 b = 0
+public static final c =30 常量，一旦赋值不变，默认初始化就是30
+
+
+解析：
+JVM 将常量池中的符号引用替换为直接引用的过程
+
+
+
+3、初始化：JVM 负责对类的静态成员初始化
+
+初始化阶段真正执行 Java 程序代码，执行<clinit>() 方法的过程
+<clinit>() 方法由编译器在源文件中出现顺序，收集类中所有静态变量，静态方法
+JVM 会保证一个类的<clinit>() 方法在多线程环境中正确加锁，同步，多个同时初始化，只有一个会调用该方法，其他阻塞等待
+
+注意：
+加载类由同步机制，保证堆中只有一个 Class 对象
+
+protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+	//正因为有这个机制，才能保证某个类在内存中, 只有一份Class对象
+    synchronized (getClassLoadingLock(name)) {
+    	//....
+    }
+}
+
+
+
+Class类：
+类名就叫 Class ，也继承 Object 类
+JVM 自动创建，类只加载一次，堆中只有一个 Class 对象，每个类的实例对象都知道自己对应哪个 Class 对象
+通过这个唯一 Class 类对象可以得到该类的信息
+类的字节码二进制存放在方法区/元数据
+
+
+基本类型：int short long float double boolean 等
+除基本类型，其他所有类型都是 Class ，包括interface 如 String Object
+
+
+Class 类构造方法是 private 只有 JVM 可以创建
+每个 Class 类对象指向一个 class 或者 interface
+
+
+！！！！！！！！！！！
+反射：通过 Class 实例获取类 class 信息的方法
+
+
+五种获取 class 类的 Class 实例的方法
+
+面试：
+说出 == 和 instance of 比较类对象的区别
+instance of 匹配指定类型和其子类，== 精确匹配是否属于某个 class
+
+拿到某个 Object 对象，直接使用getClass方法获取 Class 信息，不需要使用向下转型
+void printObjectInfo (Object obj){
+	Class cls = obj.getClass();
+}
+
+
+String s = (String) cls.newInstance();
+创建类的实例对象，但只能调用 public 的无参构造犯法
+
+动态加载：
+例子：动态加载 Commonss Logging 优先加载 Log4j，再使用 JDK 的 logging
+
+
+
+
+
+
+
+
+
+
+
+
+几种方法获取字段
+
+Field getField(name)	获取某个 public 的字段 包括父类
+Field getDeclaredField(name)  当前类的某个字段，不包括父类
+Field[] getFields()		获取所有 public 的字段，包括父类
+Field[] getDeclaredFields()	获取当前类的所有字段，不包括父类
+
+
+使用反射获取字段值
+示例：
+public class test3 {
+    public static void main(String[] args) throws Exception {
+        Person p = new Person("AAA");
+        Class cls = p.getClass();
+        Field f = cls.getDeclaredField("Name");
+        f.setAccessible(true);// 不加的话会造成因为 private 无法访问的 IllegalAccessException 异常
+        Object o = f.get(p);
+        System.out.println(o);
+
+
+    }
+}
+
+class Person{
+
+    private String Name;
+
+    public Person(String Name){
+        this.Name=Name;
+    }
+
+
+}
+
+
+面试：
+如果能用反射获取字段值，那封装还有意义吗？
+1、一般情况下使用 p.name 这样来获取，会判断 public private protected 等修饰符，达到封装目的
+2、反射是非常规，代码繁琐，且是给工具或者底层框架使用，目的是不知道任何信息情况下获取特定字段值，比如测试
+
+
+获取字段：
+getField(字段名) 继承的父类也可以获取
+getDeclaredField(字段名) 当前类的 private 字段
+getFields()
+getDeclaredFields()
+
+f.getName()			返回字段名称
+f.getType				返回字段类型
+Modifier.isFinal(f.getModifiers()) 	返回修饰符
+
+setAccessible(true) 可能会失效，JVM 运行期间某个 SecurityManager 不允许对 java 或者 javax 使用，保证 JVM 核心库安全
+
+Field.set(Object , Object)实现，指定对象，待修改值
+
+
+
+
+
+
+
+
+
+
+
+调用方法：
+
+同获取字段方法
+getMethod(方法名,形参类型的Class类比如 String.class)
+
+getReturnType()		返回方法返回值类型，Class 实例
+getParameterTypes()	返回方法的参数类型，Class 数组
+
+
+举例子：
+String S = "Hello World";
+Method method = String.class.getMethod("substring", int.class, int.class);
+String s = (String)method.invoke(S,1,2)		// 对 S 实例对象调用方法操作
+
+静态方法
+invoke 传入的第一个参数为 null
+
+同样非 public 方法要使用 Method.setAccessible(true)
+
+面试：
+如果一个 Person 类定义一个 hello() 方法，子类 Student 重写该 hello() 方法，那么用反射调用 Person.class 获取的 Method，作用于 Student 对象时，调用哪个 hello() 方法
+
+仍然遵循多态，总是调用实际类型的重写方法（如果存在）
+
+Method m = Person.class.getMethod("hello");
+m.invoke(new Student()) 
+
+等价于：
+
+Person P = new Student();
+P.hello();
+
+
+
+
+
+构造方法：
+
+Class.newinstance() 方法局限只能调用 public 的无参构造
+
+为了调用所有构造方法，提供 Constructor 类对象来创建实例对象
+
+Constructor con1 = Integer.class.getConstructor(int.class);
+Integer n1= (Integer)con1.newinstance(123);
+
+getConstructor()		获取某个 public 的构造方法
+getDeclaredConstructor()	获取某个构造方法
+getConstructors()
+getDeclaredConstructors()
+
+同样 setAccessible(true)
+
+
+
+
+
+
+
+获取继承方法
+
+获取父类的 Class：
+Class n = Integer.class.getSuperclass()
+注意：除 Object 其他所有除了 interface 的 Class 类对象必定存在一个父类
+
+获取 interface：
+通过 Class 可以查询实现的接口类型
+Class[] is = Integer.class.getInterfaces()
+注意：只返回当前类直接实现的接口类型，不包括其父类实现的接口类型
+
+所有接口的 Class 对象调用 getSuperClass() 返回的都是 null，要查看其父接口需要使用 getInterfaces()
+
+没有实现任何接口就返回空数组
+
+继承关系：
+判断对象是否是某个类型 instance of()
+
+两个 Class 对象，判断一个向上转型是否成立，使用 isAssignableFrom()
+
+Number.class.isAssignableFrom(Integer.class)	// true
+Integer.class.isAssignableFrom(Number.class)	//false
+
+
+
+
+
+
+
+
+
+动态代理
+
+定义：没有实现类但在运行期间动态创建接口对象的方式
+
+类可以实例化（非抽象类）
+interface 不能实例化
+
+所有接口interface类型的变量总是通过某个实现了接口的类的对象向上转型再赋值给接口类型的变量:
+CharSequence cs = new StringBuilder();
+
+动态代理运行期动态创建某个 interface 实例
+
+静态代理过程：
+1、定义接口
+2、编写实现类，重写内部方法
+3、创建实例转型为接口并调用
+
+举例：
+Hello 接口
+HelloWorld 是 Hello 接口实现类
+Hello hello = new HelloWorld();
+hello.morning();
+
+请注意，静态代理在编码中已经创建接口对象，而动态代理是通过反射在运行期间才创建的
+
+
+动态代理过程
+1、定义接口
+2、使用 JDK 提供的 Proxy.newProxyInstance() 创建接口对象
+
+具体流程：
+1、定义一个 InovationHandler 实例，负责实现接口方法调用定义一个InvocationHandler实例，它负责实现接口的方法调用；
+
+        InvocationHandler handler = new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                System.out.println(method);
+                if (method.getName().equals("morning")) {
+                    System.out.println("Good morning, " + args[0]);
+                }
+                return null;
+            }
+        };
+
+
+
+2、通过Proxy.newProxyInstance()创建interface实例，它需要3个参数：
+	使用的ClassLoader，通常就是接口类的ClassLoader；
+	需要实现的接口数组，至少需要传入一个接口进去；
+	用来处理接口方法调用的InvocationHandler实例。
+
+        Hello hello = (Hello) Proxy.newProxyInstance(
+            Hello.class.getClassLoader(), // 传入ClassLoader
+            new Class[] { Hello.class }, // 传入要实现的接口
+            handler); // 传入处理调用方法的InvocationHandler
+        hello.morning("Bob");
+
+
+
+3、将返回的Object强制转型为接口。
+
+
+本质上就是 JVM 在运行期间动态创建 class 字节码并加载
+通过 Proxy 创建代理对象，将接口方法代理给 InvocationHanler 完成的
+如下：
+public class HelloDynamicProxy implements Hello {
+    InvocationHandler handler;
+    public HelloDynamicProxy(InvocationHandler handler) {
+        this.handler = handler;
+    }
+    public void morning(String name) {
+        handler.invoke(
+           this,
+           Hello.class.getMethod("morning", String.class),
+           new Object[] { name });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

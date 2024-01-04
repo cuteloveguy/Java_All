@@ -1,0 +1,228 @@
+泛型
+参数化类型，传入类型作为参数
+泛型类，泛型接口，泛型方法
+
+
+@ Test
+public void test() {
+    ArrayList list = new ArrayList();
+    list.add("aaa");
+    list.add("bbb");
+    list.add("ccc");
+    list.add(111);
+    for (int i = 0; i < list.size(); i++) {
+        System.out.println((String)list.get(i));
+    }
+}
+抛出 ClassCastException 异常
+
+使用泛型：ArrayList<String> list = new ArrayList<>(); 编译时就会报错
+
+优点：
+1、避免使用 Object 粗暴代替一切对象，提供拓展能力更符合面向对象开发
+2、确定数据类型，提供类型安全检测，提高安全性
+3、提高可读性，显示提示程序员编写的数据类型
+
+泛型类，类的参数
+  T ：代表一般的任何类。
+  E ：代表 Element 元素的意思，或者 Exception 异常的意思。
+  K ：代表 Key 的意思。
+  V ：代表 Value 的意思，通常与 K 一起配合使用。
+  S ：代表 Subtype 的意思，文章后面部分会讲解示意。
+
+例子：注意，可接受多个类型
+public class Generic<T> { 
+    // key 这个成员变量的数据类型为 T, T 的类型由外部传入  
+    private T key;
+
+	// 泛型构造方法形参 key 的类型也为 T，T 的类型由外部传入
+    public Generic(T key) { 
+        this.key = key;
+    }
+    
+	// 泛型方法 getKey 的返回值类型为 T，T 的类型由外部指定
+    public T getKey(){ 
+        return key;
+    }
+}
+
+
+静态方法和静态变量不能使用泛型类声明的类型参数
+原因：
+类型参数确定是在创建泛型类对象时候 ArrayList< Integer >
+静态变量和静态方法在类加载时候已经初始化
+
+举例：
+    public static T show(T one){ // 编译错误    
+        return null;    
+    }  
+
+
+泛型接口：
+
+类型参数在接口被继承或者实现时确定
+属性默认静态，不能使用类型参数
+
+举例：
+public interface Inter<T> {
+    public abstract void show(T t) ;
+}
+
+但是如果某个类定义为泛型类，不需要确定接口类型参数，但保持一致
+// DD 类定义为 泛型类，则不需要确定 接口的类型参数
+// 但 DD 类定义的类型参数要和接口中类型参数的一致
+class DD<U, R> implements IUsb<U, R> { 
+	...
+}
+
+
+泛型方法：
+
+方法签名的返回值前面声明了一个 <T>，只能在该方法中使用
+
+注意，泛型方法中也可以使用泛型类中定义的类型参数
+
+	public <T> T testMethod1(T t){
+		return t;
+	}
+
+静态方法可以声明为泛型方法
+举例：
+    public static <E> E show(E one){ // 这是正确的，因为 E 是在静态方法签名中新定义的类型参数    
+        return null;    
+    } 
+
+调用泛型方法可以显式指定类型参数，传入必须为指定或其子类
+如果不指定，声明的参数类型为几种类型参数的最小父类，直到Object
+
+
+类型擦除：
+泛型信息只存在于代码编译阶段，成功编译过后的 class 文件中不包含任何泛型信息，泛型信息不会进入到运行时阶段。
+
+传入不同类型的 getClass 相同
+
+大部分擦除后会以 Object 类型存储，有界类型参数即泛型通配符不是
+
+原理：演唱会验票机制
+如果擦除后仍然需要使用对象相关信息，自动进行强制类型转换
+
+
+泛型继承（无继承）ClassCastException 异常
+List<Integer> 不是 List<Number> 的子类
+
+泛型通配符：
+
+<?> 无限定
+逻辑上所有的父类，包括 Object
+list.add(new Integer(1));// 编译错误 类型不确定
+Integer num = list.get(0);// 编译错误 只能赋值 Object 对象
+
+
+<? extend T> 有上界的通配符 ArrayList<? extends Number> list02 = new ArrayList<Integer>();
+add()方法受限，可以添加null
+可读不可写
+get	方法签名： E get(int index)
+
+
+
+<? super T> 有下界的通配符
+T 和 T 的超类 向上转型
+T 类及其子类可以加入集合中，T 父类不行
+可以写，不可以读
+set,add	方法签名：boolean add(E e)
+
+collections 类中的 copy 方法完美展示上下界通配符
+public class Collections {
+    // 把 src 的每个元素复制到 dest 中:
+    public static <T> void copy(List<? super T> dest, List<? extends T> src) {
+        for (int i = 0; i < src.size(); i++) {
+        	// 获取 src 集合中的元素，并赋值给变量 t，其数据类型为 T
+            T t = src.get(i);
+            // 将变量 t 添加进 dest 集合中 
+            dest.add(t);// 添加元素进入 dest 集合中
+        }
+    }
+}
+
+copy方法可以安全将 List<Integer> 添加到 List<Number> ，反过来就不对
+
+
+PESC原则：Producer Extends Consumer Super
+
+
+面试：
+1、Java中的泛型是什么 ? 使用泛型的好处是什么?
+
+1）参数化类型
+2）编译类型确认，避免 ClassCastException 异常
+
+
+2、Java的泛型是如何工作的 ? 什么是类型擦除 ?
+
+先进行编译时类型检查，再类型擦除，需要使用时插入强制类型转换
+编译时擦除所有泛型相关信息，防止类型膨胀。
+
+
+
+
+
+3、什么是泛型中的限定通配符和非限定通配符 ?
+
+对类型参数进行限制，两个
+
+<?>用任意数据类型替代
+
+
+4、List<? extends T> 和 List <? super T> 之间有什么区别 ?
+5、如何编写一个泛型方法，让它能接受泛型参数并返回泛型类型?
+6、Java 中如何使用泛型编写带有类型参数的类?
+7、编写一段泛型程序来实现 LRU 缓存
+8、你可以把 List< String > 传递给一个接受 List< Object > 参数的方法吗？
+
+不可以，无继承关系
+
+
+
+9、Array 中可以用泛型吗?
+
+不支持泛型，建议 List，且泛型提供编译检查，类型安全保证
+
+
+10、Java 中 List< Object > 和原始类型 List 之间的区别?
+
+1）编译器不会对原始类型 List 进行检查，会对 <Object> 进行检查，可以接收任何类型对象
+
+2）任何泛型类型都可以传递给原始数据类型，但是 List<String> 不能传递给 List<Object> 
+
+
+
+11、Java 中 List<?> 和 List< Object > 之间的区别是什么?
+
+1) <?> 不确定类型，<Object> 确定了就是Object类型
+2）<?> 逻辑上是所有父类，可以传入 <String> <Number> 但是不能传给<Object>，但它可以加入任何类型
+
+
+
+
+12、Java 中 List< String > 和原始类型 List 之间的区别。
+
+1）编译检查
+2）泛型不用显示类型转换，但是原始类型需要
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

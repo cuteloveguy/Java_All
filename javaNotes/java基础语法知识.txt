@@ -1,0 +1,80 @@
+
+避免不兼容 ：
+long long类型 加L
+float 类型 加F
+
+小驼峰（方法，变量）：name firstName
+大驼峰（类）：Student GoodStudent
+
+自动类型转换 小 -> 大 int long float double
+强制类型转换 大 -> 小 int k=(int)88.9
+
+/ 浮点数参与得小数 6.0/4
+
+'1'+99+1 // 1991
+99+1+'1'// 1001
+
+扩张的赋值运算符隐含强制类型转换 
+int a=7;double b=10.0;a+=b;//17
+double a=7;int b=10;a+=b;//17.0
+
+& 相同为 1 不同为 0
+&& 短路，左边false右边不执行
+
+^ 相同为 0 不同为 1
+
+| 无论左右都执行
+|| 短路，左边为true右边不执行
+
+生成随机数：
+导入Random包
+Random r=new Random();
+int num=r.nextInt(10)+1 // 生成[1,10)随机整数
+int num=r.nextInt()*5+25// 生成[25,30)之间随机小数
+
+数组初始化：
+int 默认值0
+float 默认值0
+boolean 默认值false
+char 默认值 null
+
+int[] arr=new int[3];
+int[] arr=new int[]{1,2,3};
+
+二维数组格式：
+int[][] arr
+int[] arr[]
+int arr[][]
+
+
+两个增强for遍历
+        int[][] arr=new int[2][3];
+        for (int[] ints : arr) {
+            for (int anInt : ints) {
+                System.out.print(anInt+" ");
+            }
+            System.out.println();
+        }
+        // 0 0 0
+        // 0 0 0
+
+一层层赋值
+        int[] arr1={1,2,3};
+        int[] arr2={1,2,3};
+        int[] arr3={1,2,3};
+
+        int[][] arrTwo=new int[3][3];
+        arrTwo[1]=arr1;
+        arrTwo[2]=arr2;
+        arrTwo[3]=arr3;
+
+        //1 2 3
+        //1 2 3
+        //1 2 3
+
+
+
+
+
+
+
